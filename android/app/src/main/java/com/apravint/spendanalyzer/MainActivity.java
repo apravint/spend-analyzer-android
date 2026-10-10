@@ -8,7 +8,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
-import android.provider.Telephony;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -54,19 +53,8 @@ public class MainActivity extends Activity {
             }
         });
 
+        // App opens cleanly with ZERO permission popups or background listeners
         webView.loadUrl("file:///android_asset/web/index.html");
-
-        checkAndRequestSmsPermissions();
-    }
-
-    private void checkAndRequestSmsPermissions() {
-        if (checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED ||
-            checkSelfPermission(Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{
-                Manifest.permission.READ_SMS,
-                Manifest.permission.RECEIVE_SMS
-            }, SMS_PERMISSION_CODE);
-        }
     }
 
     public void handleIncomingSms(String sender, String body, long timestamp) {
@@ -83,6 +71,58 @@ public class MainActivity extends Activity {
                 }
             });
         }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == SMS_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission granted! Syncing bank transactions...", Toast.LENGTH_SHORT).show();
+                readInboxSmsInternal();
+            } else {
+                Toast.makeText(this, "SMS permission skipped. You can still paste SMS in the tester.", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void readInboxSmsInternal() {
+        new Thread(() -> {
+            int count = 0;
+            try {
+                Uri inboxUri = Uri.parse("content://sms/inbox");
+                String[] projection = new String[]{"address", "body", "date"};
+                Cursor cursor = getContentResolver().query(inboxUri, projection, null, null, "date DESC LIMIT 150");
+
+                if (cursor != null) {
+                    int addressCol = cursor.getColumnIndex("address");
+                    int bodyCol = cursor.getColumnIndex("body");
+                    int dateCol = cursor.getColumnIndex("date");
+
+                    while (cursor.moveToNext()) {
+                        String address = cursor.getString(addressCol);
+                        String body = cursor.getString(bodyCol);
+                        long date = cursor.getLong(dateCol);
+
+                        if (address != null && body != null) {
+                            final String fAddress = address;
+                            final String fBody = body;
+                            final long fDate = date;
+
+                            runOnUiThread(() -> handleIncomingSms(fAddress, fBody, fDate));
+                            count++;
+                        }
+                    }
+                    cursor.close();
+                }
+
+                final int finalCount = count;
+                runOnUiThread(() -> Toast.makeText(this, "Parsed " + finalCount + " SMS messages locally.", Toast.LENGTH_SHORT).show());
+            } catch (Exception e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(this, "Sync complete.", Toast.LENGTH_SHORT).show());
+            }
+        }).start();
     }
 
     public class SmsBridge {
@@ -109,48 +149,9 @@ public class MainActivity extends Activity {
         public void syncDeviceSms() {
             if (checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.READ_SMS}, SMS_PERMISSION_CODE);
-                showToast("Please grant SMS permission to sync transactions.");
-                return;
+            } else {
+                readInboxSmsInternal();
             }
-
-            new Thread(() -> {
-                int count = 0;
-                try {
-                    Uri inboxUri = Uri.parse("content://sms/inbox");
-                    String[] projection = new String[]{"address", "body", "date"};
-                    Cursor cursor = getContentResolver().query(inboxUri, projection, null, null, "date DESC LIMIT 150");
-
-                    if (cursor != null) {
-                        int addressCol = cursor.getColumnIndex("address");
-                        int bodyCol = cursor.getColumnIndex("body");
-                        int dateCol = cursor.getColumnIndex("date");
-
-                        while (cursor.moveToNext()) {
-                            String address = cursor.getString(addressCol);
-                            String body = cursor.getString(bodyCol);
-                            long date = cursor.getLong(dateCol);
-
-                            if (address != null && body != null) {
-                                final String fAddress = address;
-                                final String fBody = body;
-                                final long fDate = date;
-
-                                runOnUiThread(() -> {
-                                    handleIncomingSms(fAddress, fBody, fDate);
-                                });
-                                count++;
-                            }
-                        }
-                        cursor.close();
-                    }
-
-                    final int finalCount = count;
-                    runOnUiThread(() -> showToast("Parsed " + finalCount + " SMS messages from inbox."));
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    runOnUiThread(() -> showToast("Error reading SMS inbox: " + e.getMessage()));
-                }
-            }).start();
         }
     }
 

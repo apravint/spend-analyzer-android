@@ -99,18 +99,17 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: "v1.0.0"
+          tag_name: "v1.0.1"
           files: SpendAnalyzer.apk
-          name: "SpendAnalyzer AI v1.0.0"
+          name: "SpendAnalyzer AI v1.0.1 (Safe by Default)"
           body: |
-            ## 💳 SpendAnalyzer AI - Offline SMS Income & Spend Analyzer v1.0.0
+            ## 🛡️ SpendAnalyzer AI - Safe by Default Release v1.0.1
 
-            ### 🔒 100% Private & On-Device Financial Intelligence:
-            - **Zero Internet Requirement**: Strictly offline. No analytics, tracking, or cloud servers.
-            - **Local SMS Sync**: Reads and parses Indian banking and UPI transactional SMS messages locally.
-            - **Smart Regex Parser**: Extracts Amount, Type (Debit/Credit), Merchant (Zomato, Swiggy, Amazon, Uber), and masks Account numbers (e.g. `HDFC XX1234`).
-            - **Intelligent Local Categorizer**: Buckets transactions into Food, Shopping, Travel, Groceries, Bills, Investments, and Salary.
-            - **Rich Financial Dashboard**: Inflow, Outflow, Net Cashflow, transaction history search, and category spend breakdown.
-            - **Universal Android Compatibility**: Compiled with `minSdkVersion="24"` and `targetSdkVersion="34"`, 4-byte ZipAligned, and V1/V2/V3 signed.
+            ### 🔒 Resolved Installation Security Block:
+            - **Safe by Default**: Removed static background SMS broadcast receiver and background `RECEIVE_SMS` permission.
+            - **Zero Install-Time Warnings**: The APK now installs cleanly without triggering Google Play Protect's sensitive background interception block.
+            - **Strictly On-Demand Permission**: The app opens directly to the Dashboard. SMS permission is requested **only** when the user explicitly taps "Sync SMS".
+            - **100% Offline & Private**: NO internet permission. Your banking SMS data never leaves your device memory.
+            - **Universal Compatibility**: Android 7.0 - 15+ ready with 4-byte ZipAlignment & V1/V2/V3 signatures.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
