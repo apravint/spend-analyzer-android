@@ -99,17 +99,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
         with:
-          tag_name: "v1.0.1"
+          tag_name: "v1.0.2"
           files: SpendAnalyzer.apk
-          name: "SpendAnalyzer AI v1.0.1 (Safe by Default)"
+          name: "SpendAnalyzer AI v1.0.2 (Android 14 Restricted Settings & Instant Clipboard Paste)"
           body: |
-            ## 🛡️ SpendAnalyzer AI - Safe by Default Release v1.0.1
+            ## 🛡️ SpendAnalyzer AI - Release v1.0.2
 
-            ### 🔒 Resolved Installation Security Block:
-            - **Safe by Default**: Removed static background SMS broadcast receiver and background `RECEIVE_SMS` permission.
-            - **Zero Install-Time Warnings**: The APK now installs cleanly without triggering Google Play Protect's sensitive background interception block.
-            - **Strictly On-Demand Permission**: The app opens directly to the Dashboard. SMS permission is requested **only** when the user explicitly taps "Sync SMS".
-            - **100% Offline & Private**: NO internet permission. Your banking SMS data never leaves your device memory.
-            - **Universal Compatibility**: Android 7.0 - 15+ ready with 4-byte ZipAlignment & V1/V2/V3 signatures.
+            ### 🚀 What's New & Fixed in v1.0.2:
+            - **Fixed SMS Permission Dialog**: Wrapped `requestPermissions()` on Android's UI thread (`runOnUiThread`), eliminating silent drops on Android 13/14/15.
+            - **Android 14 Restricted Settings Resolver**: Added built-in step-by-step guidance modal and 1-tap "Open App Settings" button to unlock sideloaded SMS permissions via the top-right 3-dots (`⋮`) menu.
+            - **Instant Clipboard Paste (0-Permission Fallback)**: Added 1-tap "Paste Copied SMS" button on header and dashboard. Allows instantly analyzing bank transactions without requiring any Android system permissions.
+            - **Bulk SMS Importer**: Support pasting multiple SMS messages at once to populate your financial history.
+            - **OEM Compatibility**: Cleaned SMS ContentResolver query to prevent OEM sortOrder exceptions.
+            - **100% Offline & Private**: NO internet permission. Your banking SMS data never leaves your device.
+            - **Universal Compatibility**: Android 7.0 to Android 15+ compatible with V1/V2/V3 signatures and 4-byte ZipAlignment.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

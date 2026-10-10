@@ -136,6 +136,7 @@ document.addEventListener("DOMContentLoaded", () => {
     initTransactionsView();
     initInsightsView();
     initTesterView();
+    initQuickActionsAndModals();
     initNativeBridge();
 });
 
@@ -201,8 +202,8 @@ function initTabs() {
 
 /* ---------------- LOCAL REGEX PARSER ENGINE ---------------- */
 function parseSms(sender, body, timestamp = Date.now()) {
-    const cleanSender = sender.trim().toUpperCase();
-    const lowerBody = body.toLowerCase();
+    const cleanSender = (sender || "BANK-SMS").trim().toUpperCase();
+    const lowerBody = (body || "").toLowerCase();
 
     // 1. Anti-OTP & Spam Guard
     const spamKeywords = ["otp", "verification code", "one time password", "do not share", "loan approved", "congratulations", "claim", "apply now"];
@@ -470,6 +471,7 @@ function initTesterView() {
     const senderInput = document.getElementById("rawSenderInput");
     const bodyInput = document.getElementById("rawSmsInput");
     const testBtn = document.getElementById("testParseBtn");
+    const pasteIntoTesterBtn = document.getElementById("pasteIntoTesterBtn");
     const resultBox = document.getElementById("parseResultBox");
     const outputDetails = document.getElementById("parseOutputDetails");
 
@@ -478,6 +480,16 @@ function initTesterView() {
         if (SMS_PRESETS[val]) {
             senderInput.value = SMS_PRESETS[val].sender;
             bodyInput.value = SMS_PRESETS[val].body;
+        }
+    });
+
+    pasteIntoTesterBtn.addEventListener("click", async () => {
+        triggerHaptic();
+        const text = await readDeviceClipboard();
+        if (text) {
+            bodyInput.value = text;
+        } else {
+            alert("Clipboard is empty or access was denied. Please paste text directly into the box.");
         }
     });
 
@@ -511,6 +523,176 @@ function initTesterView() {
             triggerHaptic();
         }
     });
+}
+
+/* ---------------- QUICK ACTIONS & MODALS ---------------- */
+function initQuickActionsAndModals() {
+    // Header & Dashboard Paste triggers
+    const pasteHeaderBtn = document.getElementById("pasteSmsHeaderBtn");
+    const dashPasteTile = document.getElementById("dashPasteTile");
+    const dashSyncTile = document.getElementById("dashSyncTile");
+    const dashHelpTile = document.getElementById("dashHelpTile");
+
+    pasteHeaderBtn.addEventListener("click", () => openQuickPasteModal());
+    dashPasteTile.addEventListener("click", () => openQuickPasteModal());
+    dashHelpTile.addEventListener("click", () => openPermissionGuideModal());
+
+    dashSyncTile.addEventListener("click", () => {
+        document.getElementById("syncSmsBtn").click();
+    });
+
+    // Permission Guide Modal Controls
+    const permModal = document.getElementById("permissionGuideModal");
+    const closePermBtn = document.getElementById("closePermModalBtn");
+    const openSettingsBtn = document.getElementById("openSettingsAppBtn");
+    const modalFallbackPasteBtn = document.getElementById("modalFallbackPasteBtn");
+
+    closePermBtn.addEventListener("click", () => permModal.classList.add("hidden"));
+    
+    openSettingsBtn.addEventListener("click", () => {
+        triggerHaptic();
+        if (window.AndroidBridge && window.AndroidBridge.openAppSettings) {
+            window.AndroidBridge.openAppSettings();
+        } else {
+            alert("Settings shortcut available in Android App. On your phone: Go to Settings > Apps > SpendAnalyzer.");
+        }
+    });
+
+    modalFallbackPasteBtn.addEventListener("click", () => {
+        permModal.classList.add("hidden");
+        openQuickPasteModal();
+    });
+
+    // Quick Paste Modal Controls
+    const pasteModal = document.getElementById("quickPasteModal");
+    const closePasteBtn = document.getElementById("closeQuickPasteBtn");
+    const fetchClipboardBtn = document.getElementById("fetchClipboardBtn");
+    const executePasteBtn = document.getElementById("executePasteImportBtn");
+    const pasteTextarea = document.getElementById("quickPasteTextarea");
+    const feedbackBox = document.getElementById("pasteFeedbackBox");
+
+    closePasteBtn.addEventListener("click", () => pasteModal.classList.add("hidden"));
+
+    fetchClipboardBtn.addEventListener("click", async () => {
+        triggerHaptic();
+        const text = await readDeviceClipboard();
+        if (text) {
+            pasteTextarea.value = text;
+        } else {
+            alert("Clipboard is empty. You can type or paste directly into the box.");
+        }
+    });
+
+    executePasteBtn.addEventListener("click", () => {
+        triggerHaptic();
+        const text = pasteTextarea.value.trim();
+        if (!text) {
+            alert("Please paste an SMS message to parse.");
+            return;
+        }
+
+        const result = parseBulkOrSingleSms(text);
+        feedbackBox.classList.remove("hidden");
+
+        if (result.success > 0) {
+            feedbackBox.innerHTML = `
+                <div style="color:var(--color-income);font-weight:700;">
+                    ✅ Successfully parsed & added ${result.success} transaction(s)!
+                </div>
+            `;
+            setTimeout(() => {
+                pasteModal.classList.add("hidden");
+                pasteTextarea.value = "";
+                feedbackBox.classList.add("hidden");
+            }, 1200);
+        } else {
+            feedbackBox.innerHTML = `
+                <div style="color:var(--color-expense);font-weight:600;">
+                    ⚠️ Could not detect debit/credit banking format in the text. Make sure it contains amount (Rs./INR) and transaction keywords.
+                </div>
+            `;
+        }
+    });
+}
+
+async function openQuickPasteModal() {
+    triggerHaptic();
+    const modal = document.getElementById("quickPasteModal");
+    const textarea = document.getElementById("quickPasteTextarea");
+    const feedbackBox = document.getElementById("pasteFeedbackBox");
+    feedbackBox.classList.add("hidden");
+
+    // Proactively read clipboard if available
+    const clip = await readDeviceClipboard();
+    if (clip && clip.length > 10) {
+        textarea.value = clip;
+    }
+
+    modal.classList.remove("hidden");
+}
+
+function openPermissionGuideModal() {
+    triggerHaptic();
+    const modal = document.getElementById("permissionGuideModal");
+    modal.classList.remove("hidden");
+}
+
+async function readDeviceClipboard() {
+    // 1. Android Native Bridge
+    if (window.AndroidBridge && window.AndroidBridge.getClipboardText) {
+        try {
+            const text = window.AndroidBridge.getClipboardText();
+            if (text && text.trim().length > 0) return text.trim();
+        } catch (e) {
+            console.error("Native clipboard read error", e);
+        }
+    }
+    // 2. Web Clipboard API
+    if (navigator.clipboard && navigator.clipboard.readText) {
+        try {
+            const text = await navigator.clipboard.readText();
+            if (text && text.trim().length > 0) return text.trim();
+        } catch (e) {
+            console.warn("Web clipboard access not granted", e);
+        }
+    }
+    return "";
+}
+
+function parseBulkOrSingleSms(rawText) {
+    if (!rawText || !rawText.trim()) return { success: 0, failed: 0 };
+    // Split into candidate SMS blocks (by 2+ newlines or typical SMS dividers)
+    const rawBlocks = rawText.split(/\n\s*\n|\r\n\s*\r\n/);
+    let parsedCount = 0;
+    let failedCount = 0;
+
+    rawBlocks.forEach(block => {
+        const clean = block.trim();
+        if (clean.length > 12) {
+            let sender = "BANK-SMS";
+            let body = clean;
+            const senderMatch = clean.match(/^([A-Z0-9-]{4,10})\s*:\s*(.*)/i);
+            if (senderMatch) {
+                sender = senderMatch[1].toUpperCase();
+                body = senderMatch[2];
+            }
+            const res = parseSms(sender, body);
+            if (!res.error) {
+                transactions.unshift(res);
+                parsedCount++;
+            } else {
+                failedCount++;
+            }
+        }
+    });
+
+    if (parsedCount > 0) {
+        saveTransactions();
+        refreshDashboard();
+        refreshTransactionsList();
+        refreshInsights();
+    }
+    return { success: parsedCount, failed: failedCount };
 }
 
 /* ---------------- MODAL DETAIL ---------------- */
@@ -580,7 +762,19 @@ function initNativeBridge() {
         }
     });
 
-    // Native callback invoked by Android Java BroadcastReceiver when an incoming SMS arrives
+    // Native callback invoked by Android Java when permission is denied or restricted
+    window.onPermissionDenied = function() {
+        openPermissionGuideModal();
+    };
+
+    // Native callback invoked by Android Java when inbox SMS query completes
+    window.onSyncFinished = function(count) {
+        refreshDashboard();
+        refreshTransactionsList();
+        refreshInsights();
+    };
+
+    // Native callback invoked by Android Java when an incoming SMS arrives
     window.onSmsReceived = function(sender, body, timestamp) {
         const parsed = parseSms(sender, body, timestamp || Date.now());
         if (!parsed.error) {

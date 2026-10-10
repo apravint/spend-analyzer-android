@@ -2,12 +2,16 @@ package com.apravint.spendanalyzer;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Vibrator;
+import android.provider.Settings;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -53,7 +57,7 @@ public class MainActivity extends Activity {
             }
         });
 
-        // App opens cleanly with ZERO permission popups or background listeners
+        // App opens cleanly with ZERO permission popups on startup
         webView.loadUrl("file:///android_asset/web/index.html");
     }
 
@@ -78,28 +82,35 @@ public class MainActivity extends Activity {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == SMS_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permission granted! Syncing bank transactions...", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Permission granted! Reading bank SMS...", Toast.LENGTH_SHORT).show();
                 readInboxSmsInternal();
             } else {
-                Toast.makeText(this, "SMS permission skipped. You can still paste SMS in the tester.", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, "SMS Permission restricted or not granted.", Toast.LENGTH_SHORT).show();
+                if (webView != null) {
+                    webView.evaluateJavascript("if (window.onPermissionDenied) { window.onPermissionDenied(); }", null);
+                }
             }
         }
     }
 
-    private void readInboxSmsInternal() {
+    public void readInboxSmsInternal() {
         new Thread(() -> {
             int count = 0;
             try {
                 Uri inboxUri = Uri.parse("content://sms/inbox");
                 String[] projection = new String[]{"address", "body", "date"};
-                Cursor cursor = getContentResolver().query(inboxUri, projection, null, null, "date DESC LIMIT 150");
+                // Use standard sort order without LIMIT clause for maximum OEM compatibility
+                Cursor cursor = getContentResolver().query(inboxUri, projection, null, null, "date DESC");
+                if (cursor == null) {
+                    cursor = getContentResolver().query(Uri.parse("content://sms"), projection, null, null, "date DESC");
+                }
 
                 if (cursor != null) {
                     int addressCol = cursor.getColumnIndex("address");
                     int bodyCol = cursor.getColumnIndex("body");
                     int dateCol = cursor.getColumnIndex("date");
 
-                    while (cursor.moveToNext()) {
+                    while (cursor.moveToNext() && count < 250) {
                         String address = cursor.getString(addressCol);
                         String body = cursor.getString(bodyCol);
                         long date = cursor.getLong(dateCol);
@@ -117,10 +128,23 @@ public class MainActivity extends Activity {
                 }
 
                 final int finalCount = count;
-                runOnUiThread(() -> Toast.makeText(this, "Parsed " + finalCount + " SMS messages locally.", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Synced " + finalCount + " SMS messages locally.", Toast.LENGTH_SHORT).show();
+                    if (webView != null) {
+                        webView.evaluateJavascript("if (window.onSyncFinished) { window.onSyncFinished(" + finalCount + "); }", null);
+                    }
+                });
+            } catch (SecurityException se) {
+                se.printStackTrace();
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "SMS Permission restricted by Android.", Toast.LENGTH_LONG).show();
+                    if (webView != null) {
+                        webView.evaluateJavascript("if (window.onPermissionDenied) { window.onPermissionDenied(); }", null);
+                    }
+                });
             } catch (Exception e) {
                 e.printStackTrace();
-                runOnUiThread(() -> Toast.makeText(this, "Sync complete.", Toast.LENGTH_SHORT).show());
+                runOnUiThread(() -> Toast.makeText(this, "Error reading inbox: " + e.getMessage(), Toast.LENGTH_LONG).show());
             }
         }).start();
     }
@@ -142,16 +166,54 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void showToast(String message) {
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show();
+            runOnUiThread(() -> Toast.makeText(context, message, Toast.LENGTH_SHORT).show());
+        }
+
+        @JavascriptInterface
+        public boolean hasSmsPermission() {
+            return checkSelfPermission(Manifest.permission.READ_SMS) == PackageManager.PERMISSION_GRANTED;
         }
 
         @JavascriptInterface
         public void syncDeviceSms() {
-            if (checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(new String[]{Manifest.permission.READ_SMS}, SMS_PERMISSION_CODE);
-            } else {
-                readInboxSmsInternal();
+            // Must run on UI Thread so Android shows permission dialog properly
+            runOnUiThread(() -> {
+                if (checkSelfPermission(Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(new String[]{Manifest.permission.READ_SMS}, SMS_PERMISSION_CODE);
+                } else {
+                    readInboxSmsInternal();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public void openAppSettings() {
+            runOnUiThread(() -> {
+                try {
+                    Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                    intent.setData(Uri.parse("package:" + getPackageName()));
+                    startActivity(intent);
+                } catch (Exception e) {
+                    Toast.makeText(context, "Please open Settings > Apps > SpendAnalyzer", Toast.LENGTH_LONG).show();
+                }
+            });
+        }
+
+        @JavascriptInterface
+        public String getClipboardText() {
+            try {
+                ClipboardManager clipboard = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                if (clipboard != null && clipboard.hasPrimaryClip()) {
+                    ClipData clip = clipboard.getPrimaryClip();
+                    if (clip != null && clip.getItemCount() > 0) {
+                        CharSequence text = clip.getItemAt(0).getText();
+                        return text != null ? text.toString() : "";
+                    }
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
+            return "";
         }
     }
 

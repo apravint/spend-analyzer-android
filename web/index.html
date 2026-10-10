@@ -27,9 +27,13 @@
                 </div>
             </div>
             <div class="header-actions">
+                <button id="pasteSmsHeaderBtn" class="btn btn-secondary btn-sm" title="Paste Copied SMS">
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    <span>Paste</span>
+                </button>
                 <button id="syncSmsBtn" class="btn btn-primary btn-sm" title="Sync SMS from Device Inbox">
-                    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
-                    <span>Sync SMS</span>
+                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                    <span>Sync</span>
                 </button>
                 <button id="themeToggleBtn" class="icon-btn" title="Toggle Theme">
                     <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
@@ -63,7 +67,7 @@
             <section id="dashboardTab" class="tab-pane active">
                 <!-- Cashflow Summary Banner -->
                 <div class="summary-hero-card card">
-                    <span class="hero-label">Net Cashflow (This Month)</span>
+                    <span class="hero-label">Net Cashflow (Tracked Period)</span>
                     <h2 id="heroNetBalance" class="hero-amount">₹0.00</h2>
                     
                     <div class="inflow-outflow-grid">
@@ -74,6 +78,39 @@
                         <div class="flow-box flow-expense">
                             <span class="flow-label">Total Outflow (Spends)</span>
                             <h3 id="heroTotalExpense">₹0.00</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Action Tiles -->
+                <div class="quick-actions-grid">
+                    <div class="action-tile" id="dashSyncTile">
+                        <div class="tile-icon icon-blue">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+                        </div>
+                        <div class="tile-info">
+                            <strong>Sync Device SMS</strong>
+                            <p>Read all banking SMS locally</p>
+                        </div>
+                    </div>
+
+                    <div class="action-tile" id="dashPasteTile">
+                        <div class="tile-icon icon-green">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                        </div>
+                        <div class="tile-info">
+                            <strong>Paste SMS</strong>
+                            <p>Instant parse (0 permissions)</p>
+                        </div>
+                    </div>
+
+                    <div class="action-tile" id="dashHelpTile">
+                        <div class="tile-icon icon-amber">
+                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                        </div>
+                        <div class="tile-info">
+                            <strong>Android 14 Guide</strong>
+                            <p>Allow Restricted Settings</p>
                         </div>
                     </div>
                 </div>
@@ -170,10 +207,16 @@
                         <textarea id="rawSmsInput" rows="3" class="mono-input">Your a/c no. XX1234 is debited for Rs. 540.00 on 10-Oct-26 by Zomato UPI ref 4289102482. Avl Bal: Rs. 24,150.00</textarea>
                     </div>
 
-                    <button id="testParseBtn" class="btn btn-primary btn-lg">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                        <span>Parse & Add to Analyzer</span>
-                    </button>
+                    <div class="form-actions-row">
+                        <button id="pasteIntoTesterBtn" class="btn btn-secondary">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                            <span>Paste From Clipboard</span>
+                        </button>
+                        <button id="testParseBtn" class="btn btn-primary">
+                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <span>Parse & Add</span>
+                        </button>
+                    </div>
 
                     <!-- Parse Result Box -->
                     <div id="parseResultBox" class="parse-result-box hidden">
@@ -183,6 +226,91 @@
                 </div>
             </section>
         </main>
+    </div>
+
+    <!-- Permission Guide Modal (For Android 13/14/15 Restricted Settings) -->
+    <div id="permissionGuideModal" class="modal-overlay hidden">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <div>
+                    <span class="tag tag-warning">Android 14 Security</span>
+                    <h3 style="margin-top:4px;">Enable SMS Reading</h3>
+                </div>
+                <button id="closePermModalBtn" class="icon-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="perm-alert-banner">
+                    <p>Android 14 places <strong>"Restricted settings"</strong> on sideloaded APKs. Follow these 4 quick steps to unlock SMS sync:</p>
+                </div>
+                <div class="perm-steps-list">
+                    <div class="perm-step-item">
+                        <div class="perm-step-num">1</div>
+                        <div class="perm-step-text">Tap <strong>"Open Settings"</strong> button below to jump to SpendAnalyzer App Info.</div>
+                    </div>
+                    <div class="perm-step-item">
+                        <div class="perm-step-num">2</div>
+                        <div class="perm-step-text">Look at the <strong>top-right corner</strong> and tap the <strong>3 vertical dots (⋮)</strong>.</div>
+                    </div>
+                    <div class="perm-step-item">
+                        <div class="perm-step-num">3</div>
+                        <div class="perm-step-text">Tap <strong>"Allow restricted settings"</strong> and verify your PIN / Fingerprint.</div>
+                    </div>
+                    <div class="perm-step-item">
+                        <div class="perm-step-num">4</div>
+                        <div class="perm-step-text">Tap <strong>Permissions ➔ SMS ➔ Allow</strong>. Then return here and tap Sync!</div>
+                    </div>
+                </div>
+
+                <div class="privacy-reassurance">
+                    <small>🔒 <strong>Zero Internet Permission</strong>: Your SMS never leaves your device memory.</small>
+                </div>
+            </div>
+            <div class="modal-footer flex-column">
+                <button id="openSettingsAppBtn" class="btn btn-primary btn-lg">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                    <span>1. Open App Settings</span>
+                </button>
+                <button id="modalFallbackPasteBtn" class="btn btn-secondary btn-lg" style="margin-top:8px;">
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    <span>2. Or Paste SMS (No Permission Needed)</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Paste & Bulk Importer Modal -->
+    <div id="quickPasteModal" class="modal-overlay hidden">
+        <div class="modal-content card">
+            <div class="modal-header">
+                <div>
+                    <span class="tag">Instant Parse</span>
+                    <h3 style="margin-top:4px;">Paste Banking SMS</h3>
+                </div>
+                <button id="closeQuickPasteBtn" class="icon-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">
+                    Copy SMS from your messaging app and paste here. Works 100% offline with zero Android permissions required!
+                </p>
+
+                <div class="form-group">
+                    <label for="quickPasteTextarea">SMS Content (Single or Multiple):</label>
+                    <textarea id="quickPasteTextarea" rows="5" class="mono-input" placeholder="Paste your bank transaction SMS here..."></textarea>
+                </div>
+
+                <div id="pasteFeedbackBox" class="parse-result-box hidden" style="margin-top:10px;"></div>
+            </div>
+            <div class="modal-footer">
+                <button id="fetchClipboardBtn" class="btn btn-secondary btn-sm">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
+                    <span>Read Clipboard</span>
+                </button>
+                <button id="executePasteImportBtn" class="btn btn-primary btn-sm">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span>Parse & Save</span>
+                </button>
+            </div>
+        </div>
     </div>
 
     <!-- Transaction Detail Modal -->
