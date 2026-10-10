@@ -1,0 +1,116 @@
+name: Build and Release Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Accept Android SDK Licenses & Install Build Tools
+        run: |
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+
+      - name: Build Unsigned APK
+        run: |
+          mkdir -p build/gen build/obj build/bin assets/web
+          cp -r web/* assets/
+          cp -r web/* assets/web/
+          export ANDROID_JAR=$ANDROID_HOME/platforms/android-34/android.jar
+          
+          echo "=== 1. Compiling Android Resources ==="
+          $ANDROID_HOME/build-tools/34.0.0/aapt package -f -m \
+            -J build/gen \
+            -M android/app/src/main/AndroidManifest.xml \
+            -S android/app/src/main/res \
+            -I $ANDROID_JAR
+          
+          echo "=== 2. Compiling Java Source Files ==="
+          find android/app/src/main/java build/gen -name "*.java" > sources.txt
+          javac -d build/obj \
+            -classpath $ANDROID_JAR \
+            -source 1.8 -target 1.8 \
+            @sources.txt
+          
+          echo "=== 3. Converting Bytecode to DEX ==="
+          find build/obj -name "*.class" > classes.txt
+          $ANDROID_HOME/build-tools/34.0.0/d8 \
+            --output build/bin/ \
+            --lib $ANDROID_JAR \
+            $(cat classes.txt)
+          
+          echo "=== 4. Packaging Unaligned APK ==="
+          $ANDROID_HOME/build-tools/34.0.0/aapt package -f \
+            -M android/app/src/main/AndroidManifest.xml \
+            -S android/app/src/main/res \
+            -A assets \
+            -I $ANDROID_JAR \
+            -F build/bin/unaligned.apk build/bin/
+
+      - name: ZipAlign & Sign APK
+        run: |
+          echo "=== 1. ZipAligning APK to 4-byte boundary ==="
+          $ANDROID_HOME/build-tools/34.0.0/zipalign -v 4 build/bin/unaligned.apk build/bin/aligned.apk
+
+          echo "=== 2. Creating Keystore ==="
+          keytool -genkey -v -keystore release.keystore \
+            -alias spendanalyzer \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass android -keypass android \
+            -dname "CN=AyyappaPravin, OU=FinanceAI, O=SpendAnalyzer, L=Chennai, S=TN, C=IN"
+          
+          echo "=== 3. Signing APK with V1/V2/V3 schemes ==="
+          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
+            --ks release.keystore \
+            --ks-pass pass:android \
+            --key-pass pass:android \
+            --v1-signing-enabled true \
+            --v2-signing-enabled true \
+            --v3-signing-enabled true \
+            --out SpendAnalyzer.apk \
+            build/bin/aligned.apk
+          
+          echo "=== 4. Verifying Signed APK ==="
+          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose SpendAnalyzer.apk
+
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SpendAnalyzer-APK
+          path: SpendAnalyzer.apk
+
+      - name: Release APK
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+        with:
+          tag_name: "v1.0.0"
+          files: SpendAnalyzer.apk
+          name: "SpendAnalyzer AI v1.0.0"
+          body: |
+            ## 💳 SpendAnalyzer AI - Offline SMS Income & Spend Analyzer v1.0.0
+
+            ### 🔒 100% Private & On-Device Financial Intelligence:
+            - **Zero Internet Requirement**: Strictly offline. No analytics, tracking, or cloud servers.
+            - **Local SMS Sync**: Reads and parses Indian banking and UPI transactional SMS messages locally.
+            - **Smart Regex Parser**: Extracts Amount, Type (Debit/Credit), Merchant (Zomato, Swiggy, Amazon, Uber), and masks Account numbers (e.g. `HDFC XX1234`).
+            - **Intelligent Local Categorizer**: Buckets transactions into Food, Shopping, Travel, Groceries, Bills, Investments, and Salary.
+            - **Rich Financial Dashboard**: Inflow, Outflow, Net Cashflow, transaction history search, and category spend breakdown.
+            - **Universal Android Compatibility**: Compiled with `minSdkVersion="24"` and `targetSdkVersion="34"`, 4-byte ZipAligned, and V1/V2/V3 signed.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
