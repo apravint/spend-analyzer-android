@@ -1,117 +1,98 @@
-name: Build and Release Android APK
+name: Build Flutter App & Release APK
 
 on:
   push:
-    branches: [ main, master ]
-    tags: [ 'v*' ]
+    branches:
+      - main
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: false
 
 jobs:
   build:
+    name: Test & Build Flutter App
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Set up Java JDK
+      - name: Set up Java 17
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
           distribution: 'temurin'
+          java-version: '17'
 
-      - name: Accept Android SDK Licenses & Install Build Tools
-        run: |
-          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
-          $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "platforms;android-34" "build-tools;34.0.0" || true
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
 
-      - name: Build Unsigned APK
-        run: |
-          mkdir -p build/gen build/obj build/bin assets/web
-          cp -r web/* assets/
-          cp -r web/* assets/web/
-          export ANDROID_JAR=$ANDROID_HOME/platforms/android-34/android.jar
-          
-          echo "=== 1. Compiling Android Resources ==="
-          $ANDROID_HOME/build-tools/34.0.0/aapt package -f -m \
-            -J build/gen \
-            -M android/app/src/main/AndroidManifest.xml \
-            -S android/app/src/main/res \
-            -I $ANDROID_JAR
-          
-          echo "=== 2. Compiling Java Source Files ==="
-          find android/app/src/main/java build/gen -name "*.java" > sources.txt
-          javac -d build/obj \
-            -classpath $ANDROID_JAR \
-            -source 1.8 -target 1.8 \
-            @sources.txt
-          
-          echo "=== 3. Converting Bytecode to DEX ==="
-          find build/obj -name "*.class" > classes.txt
-          $ANDROID_HOME/build-tools/34.0.0/d8 \
-            --output build/bin/ \
-            --lib $ANDROID_JAR \
-            $(cat classes.txt)
-          
-          echo "=== 4. Packaging Unaligned APK ==="
-          $ANDROID_HOME/build-tools/34.0.0/aapt package -f \
-            -M android/app/src/main/AndroidManifest.xml \
-            -S android/app/src/main/res \
-            -A assets \
-            -I $ANDROID_JAR \
-            -F build/bin/unaligned.apk build/bin/
+      - name: Install Dependencies
+        run: flutter pub get
 
-      - name: ZipAlign & Sign APK
-        run: |
-          echo "=== 1. ZipAligning APK to 4-byte boundary ==="
-          $ANDROID_HOME/build-tools/34.0.0/zipalign -v 4 build/bin/unaligned.apk build/bin/aligned.apk
+      - name: Code Static Analysis
+        run: flutter analyze
 
-          echo "=== 2. Creating Keystore ==="
-          keytool -genkey -v -keystore release.keystore \
-            -alias spendanalyzer \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -storepass android -keypass android \
-            -dname "CN=AyyappaPravin, OU=FinanceAI, O=SpendAnalyzer, L=Chennai, S=TN, C=IN"
-          
-          echo "=== 3. Signing APK with V1/V2/V3 schemes ==="
-          $ANDROID_HOME/build-tools/34.0.0/apksigner sign \
-            --ks release.keystore \
-            --ks-pass pass:android \
-            --key-pass pass:android \
-            --v1-signing-enabled true \
-            --v2-signing-enabled true \
-            --v3-signing-enabled true \
-            --out SpendAnalyzer.apk \
-            build/bin/aligned.apk
-          
-          echo "=== 4. Verifying Signed APK ==="
-          $ANDROID_HOME/build-tools/34.0.0/apksigner verify --verbose SpendAnalyzer.apk
+      - name: Run Test Suite
+        run: flutter test
+
+      - name: Build Flutter Web Demo
+        run: flutter build web --release --base-href "/spend-analyzer-android/"
+
+      - name: Build Android Release APK
+        run: flutter build apk --release
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SpendAnalyzer-APK
-          path: SpendAnalyzer.apk
+          name: SpendAnalyzer-Flutter-APK
+          path: build/app/outputs/flutter-apk/app-release.apk
 
-      - name: Release APK
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/main'
+      - name: Upload Web Artifact for GitHub Pages
+        if: github.ref == 'refs/heads/main'
+        uses: actions/upload-pages-artifact@v3
         with:
-          tag_name: "v1.0.2"
-          files: SpendAnalyzer.apk
-          name: "SpendAnalyzer AI v1.0.2 (Android 14 Restricted Settings & Instant Clipboard Paste)"
-          body: |
-            ## 🛡️ SpendAnalyzer AI - Release v1.0.2
+          path: build/web
 
-            ### 🚀 What's New & Fixed in v1.0.2:
-            - **Fixed SMS Permission Dialog**: Wrapped `requestPermissions()` on Android's UI thread (`runOnUiThread`), eliminating silent drops on Android 13/14/15.
-            - **Android 14 Restricted Settings Resolver**: Added built-in step-by-step guidance modal and 1-tap "Open App Settings" button to unlock sideloaded SMS permissions via the top-right 3-dots (`⋮`) menu.
-            - **Instant Clipboard Paste (0-Permission Fallback)**: Added 1-tap "Paste Copied SMS" button on header and dashboard. Allows instantly analyzing bank transactions without requiring any Android system permissions.
-            - **Bulk SMS Importer**: Support pasting multiple SMS messages at once to populate your financial history.
-            - **OEM Compatibility**: Cleaned SMS ContentResolver query to prevent OEM sortOrder exceptions.
-            - **100% Offline & Private**: NO internet permission. Your banking SMS data never leaves your device.
-            - **Universal Compatibility**: Android 7.0 to Android 15+ compatible with V1/V2/V3 signatures and 4-byte ZipAlignment.
+      - name: Create GitHub Release on Tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/app/outputs/flutter-apk/app-release.apk
+          name: SpendAnalyzer AI ${{ github.ref_name }}
+          body: |
+            ### 💳 SpendAnalyzer AI Release (${{ github.ref_name }})
+            - Upgraded to modern **Flutter 3.x / Dart 3.x** native architecture.
+            - Deep midnight obsidian glassmorphism UI with emerald/mint financial palette.
+            - 100% offline, private on-device regex parsing for Indian bank & UPI SMS.
+            - 4 Core Modules: Financial Dashboard, Filterable Transactions, Expense Insights, and Interactive SMS Regex Tester.
+            - Android 15 (SDK 35) Edge-to-Edge compliance.
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-pages:
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

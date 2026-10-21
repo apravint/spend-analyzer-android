@@ -1,357 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SpendAnalyzer AI - Offline SMS Income & Spend Analyzer</title>
-    <!-- Google Fonts: Outfit & Fira Code -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="spend_analyzer">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>spend_analyzer</title>
+  <link rel="manifest" href="manifest.json">
 </head>
 <body>
-    <div class="app-container">
-        <!-- Top App Bar -->
-        <header class="app-header">
-            <div class="brand">
-                <div class="brand-logo">
-                    <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="2.3">
-                        <line x1="12" y1="1" x2="12" y2="23"></line>
-                        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-                    </svg>
-                </div>
-                <div class="brand-text">
-                    <h1>SpendAnalyzer <span>AI</span></h1>
-                    <span class="badge">🔒 100% Private • Local Only</span>
-                </div>
-            </div>
-            <div class="header-actions">
-                <button id="pasteSmsHeaderBtn" class="btn btn-secondary btn-sm" title="Paste Copied SMS">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                    <span>Paste</span>
-                </button>
-                <button id="syncSmsBtn" class="btn btn-primary btn-sm" title="Sync SMS from Device Inbox">
-                    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
-                    <span>Sync</span>
-                </button>
-                <button id="themeToggleBtn" class="icon-btn" title="Toggle Theme">
-                    <svg class="sun-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>
-                    <svg class="moon-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-                </button>
-            </div>
-        </header>
+  <!--
+    You can customize the "flutter_bootstrap.js" script.
+    This is useful to provide a custom configuration to the Flutter loader
+    or to give the user feedback during the initialization process.
 
-        <!-- Navigation Tabs -->
-        <nav class="nav-tabs">
-            <button class="nav-btn active" data-tab="dashboard">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
-                <span>Dashboard</span>
-            </button>
-            <button class="nav-btn" data-tab="transactions">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
-                <span>Transactions</span>
-            </button>
-            <button class="nav-btn" data-tab="insights">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
-                <span>Insights</span>
-            </button>
-            <button class="nav-btn" data-tab="tester">
-                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                <span>SMS Tester</span>
-            </button>
-        </nav>
-
-        <main class="content-area">
-            <!-- TAB 1: DASHBOARD -->
-            <section id="dashboardTab" class="tab-pane active">
-                <!-- Cashflow Summary Banner -->
-                <div class="summary-hero-card card">
-                    <span class="hero-label">Net Cashflow (Tracked Period)</span>
-                    <h2 id="heroNetBalance" class="hero-amount">₹0.00</h2>
-                    
-                    <div class="inflow-outflow-grid">
-                        <div class="flow-box flow-income">
-                            <span class="flow-label">Total Inflow (Income)</span>
-                            <h3 id="heroTotalIncome">₹0.00</h3>
-                        </div>
-                        <div class="flow-box flow-expense">
-                            <span class="flow-label">Total Outflow (Spends)</span>
-                            <h3 id="heroTotalExpense">₹0.00</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Action Tiles -->
-                <div class="quick-actions-grid">
-                    <div class="action-tile" id="dashSyncTile">
-                        <div class="tile-icon icon-blue">
-                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
-                        </div>
-                        <div class="tile-info">
-                            <strong>Sync Device SMS</strong>
-                            <p>Read all banking SMS locally</p>
-                        </div>
-                    </div>
-
-                    <div class="action-tile" id="dashPasteTile">
-                        <div class="tile-icon icon-green">
-                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                        </div>
-                        <div class="tile-info">
-                            <strong>Paste SMS</strong>
-                            <p>Instant parse (0 permissions)</p>
-                        </div>
-                    </div>
-
-                    <div class="action-tile" id="dashHelpTile">
-                        <div class="tile-icon icon-amber">
-                            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                        </div>
-                        <div class="tile-info">
-                            <strong>Android 14 Guide</strong>
-                            <p>Allow Restricted Settings</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Bank Accounts Breakdown -->
-                <div class="card bank-accounts-card">
-                    <div class="card-header">
-                        <h3>Active Accounts Detected</h3>
-                        <span class="sub-label">Masked for Privacy</span>
-                    </div>
-                    <div id="bankAccountsList" class="bank-chips-list"></div>
-                </div>
-
-                <!-- Recent Transactions Preview -->
-                <div class="card recent-tx-card">
-                    <div class="card-header">
-                        <h3>Recent Transactions</h3>
-                        <button class="text-link-btn" id="seeAllTxBtn">See All ➔</button>
-                    </div>
-                    <div id="recentTransactionsList" class="tx-list"></div>
-                </div>
-            </section>
-
-            <!-- TAB 2: TRANSACTIONS HISTORY -->
-            <section id="transactionsTab" class="tab-pane">
-                <div class="card search-filter-card">
-                    <div class="search-box">
-                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                        <input type="text" id="txSearchInput" placeholder="Search by merchant, bank or amount (e.g. Zomato, HDFC)...">
-                    </div>
-                    
-                    <div class="filter-pills-row">
-                        <button class="filter-pill active" data-type="all">All</button>
-                        <button class="filter-pill" data-type="DEBIT">Spends Only</button>
-                        <button class="filter-pill" data-type="CREDIT">Income Only</button>
-                    </div>
-                </div>
-
-                <div class="card tx-full-card">
-                    <div class="card-header">
-                        <h3 id="txCountHeading">Logged Transactions (0)</h3>
-                        <button id="clearDataBtn" class="text-link-btn text-danger">Reset Data</button>
-                    </div>
-                    <div id="allTransactionsList" class="tx-list"></div>
-                </div>
-            </section>
-
-            <!-- TAB 3: INSIGHTS -->
-            <section id="insightsTab" class="tab-pane">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Category Spending Breakdown</h2>
-                        <span class="sub-label">Ranked from highest to lowest expenditure</span>
-                    </div>
-
-                    <div id="insightsTotalContainer" class="insights-summary-banner">
-                        <span>Total Tracked Spends:</span>
-                        <h3 id="insightsTotalSpent">₹0.00</h3>
-                    </div>
-
-                    <div id="categoryBreakdownList" class="category-bars-list"></div>
-                </div>
-            </section>
-
-            <!-- TAB 4: SMS TESTER & PARSER VALIDATOR -->
-            <section id="testerTab" class="tab-pane">
-                <div class="card">
-                    <div class="card-header">
-                        <h2>Local Regex SMS Parsing Engine Tester</h2>
-                        <span class="sub-label">Test Indian banking SMS templates or paste custom text</span>
-                    </div>
-
-                    <!-- Preset Selector -->
-                    <div class="form-group">
-                        <label for="smsPresetSelect">Select Preset Indian Banking SMS Template:</label>
-                        <select id="smsPresetSelect">
-                            <option value="hdfc_debit">HDFC Bank Debit (Zomato UPI)</option>
-                            <option value="sbi_credit">SBI Bank Credit (Monthly Salary)</option>
-                            <option value="icici_debit">ICICI Bank Debit (Amazon Shopping)</option>
-                            <option value="axis_debit">Axis Bank Debit (Uber Ride)</option>
-                            <option value="paytm_debit">Paytm Bank Debit (Blinkit Groceries)</option>
-                            <option value="kotak_credit">Kotak Mahindra Credit (UPI Transfer)</option>
-                            <option value="spam_otp">Spam / OTP SMS (Should be ignored)</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="rawSenderInput">Sender ID:</label>
-                        <input type="text" id="rawSenderInput" value="VK-HDFCBK" class="mono-input">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="rawSmsInput">SMS Message Body:</label>
-                        <textarea id="rawSmsInput" rows="3" class="mono-input">Your a/c no. XX1234 is debited for Rs. 540.00 on 10-Oct-26 by Zomato UPI ref 4289102482. Avl Bal: Rs. 24,150.00</textarea>
-                    </div>
-
-                    <div class="form-actions-row">
-                        <button id="pasteIntoTesterBtn" class="btn btn-secondary">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                            <span>Paste From Clipboard</span>
-                        </button>
-                        <button id="testParseBtn" class="btn btn-primary">
-                            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                            <span>Parse & Add</span>
-                        </button>
-                    </div>
-
-                    <!-- Parse Result Box -->
-                    <div id="parseResultBox" class="parse-result-box hidden">
-                        <h4>Extraction Breakdown:</h4>
-                        <div id="parseOutputDetails" class="parse-details-grid"></div>
-                    </div>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Permission Guide Modal (For Android 13/14/15 Restricted Settings) -->
-    <div id="permissionGuideModal" class="modal-overlay hidden">
-        <div class="modal-content card">
-            <div class="modal-header">
-                <div>
-                    <span class="tag tag-warning">Android 14 Security</span>
-                    <h3 style="margin-top:4px;">Enable SMS Reading</h3>
-                </div>
-                <button id="closePermModalBtn" class="icon-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="perm-alert-banner">
-                    <p>Android 14 places <strong>"Restricted settings"</strong> on sideloaded APKs. Follow these 4 quick steps to unlock SMS sync:</p>
-                </div>
-                <div class="perm-steps-list">
-                    <div class="perm-step-item">
-                        <div class="perm-step-num">1</div>
-                        <div class="perm-step-text">Tap <strong>"Open Settings"</strong> button below to jump to SpendAnalyzer App Info.</div>
-                    </div>
-                    <div class="perm-step-item">
-                        <div class="perm-step-num">2</div>
-                        <div class="perm-step-text">Look at the <strong>top-right corner</strong> and tap the <strong>3 vertical dots (⋮)</strong>.</div>
-                    </div>
-                    <div class="perm-step-item">
-                        <div class="perm-step-num">3</div>
-                        <div class="perm-step-text">Tap <strong>"Allow restricted settings"</strong> and verify your PIN / Fingerprint.</div>
-                    </div>
-                    <div class="perm-step-item">
-                        <div class="perm-step-num">4</div>
-                        <div class="perm-step-text">Tap <strong>Permissions ➔ SMS ➔ Allow</strong>. Then return here and tap Sync!</div>
-                    </div>
-                </div>
-
-                <div class="privacy-reassurance">
-                    <small>🔒 <strong>Zero Internet Permission</strong>: Your SMS never leaves your device memory.</small>
-                </div>
-            </div>
-            <div class="modal-footer flex-column">
-                <button id="openSettingsAppBtn" class="btn btn-primary btn-lg">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                    <span>1. Open App Settings</span>
-                </button>
-                <button id="modalFallbackPasteBtn" class="btn btn-secondary btn-lg" style="margin-top:8px;">
-                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                    <span>2. Or Paste SMS (No Permission Needed)</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Paste & Bulk Importer Modal -->
-    <div id="quickPasteModal" class="modal-overlay hidden">
-        <div class="modal-content card">
-            <div class="modal-header">
-                <div>
-                    <span class="tag">Instant Parse</span>
-                    <h3 style="margin-top:4px;">Paste Banking SMS</h3>
-                </div>
-                <button id="closeQuickPasteBtn" class="icon-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">
-                    Copy SMS from your messaging app and paste here. Works 100% offline with zero Android permissions required!
-                </p>
-
-                <div class="form-group">
-                    <label for="quickPasteTextarea">SMS Content (Single or Multiple):</label>
-                    <textarea id="quickPasteTextarea" rows="5" class="mono-input" placeholder="Paste your bank transaction SMS here..."></textarea>
-                </div>
-
-                <div id="pasteFeedbackBox" class="parse-result-box hidden" style="margin-top:10px;"></div>
-            </div>
-            <div class="modal-footer">
-                <button id="fetchClipboardBtn" class="btn btn-secondary btn-sm">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect></svg>
-                    <span>Read Clipboard</span>
-                </button>
-                <button id="executePasteImportBtn" class="btn btn-primary btn-sm">
-                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                    <span>Parse & Save</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Transaction Detail Modal -->
-    <div id="txModal" class="modal-overlay hidden">
-        <div class="modal-content card">
-            <div class="modal-header">
-                <div>
-                    <span id="modalTypeTag" class="tag">DEBIT</span>
-                    <h3 id="modalMerchant">Zomato</h3>
-                </div>
-                <button id="closeModalBtn" class="icon-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="modal-amount-box">
-                    <span class="label">Amount:</span>
-                    <h2 id="modalAmount">₹540.00</h2>
-                </div>
-                <div class="modal-info-row">
-                    <span>Account:</span>
-                    <strong id="modalAccount">HDFC XX1234</strong>
-                </div>
-                <div class="modal-info-row">
-                    <span>Category:</span>
-                    <strong id="modalCategory">Food & Dining</strong>
-                </div>
-                <div class="modal-info-row">
-                    <span>Date & Time:</span>
-                    <span id="modalDate">10 Oct 2026, 04:30 PM</span>
-                </div>
-                <div class="modal-raw-sms">
-                    <span class="label">Original SMS Body:</span>
-                    <p id="modalRawBody" class="mono-text">Raw text...</p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button id="deleteTxBtn" class="btn btn-secondary text-danger btn-sm">Delete</button>
-                <button id="closeModalBtn2" class="btn btn-primary btn-sm">Done</button>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
+    For more details:
+    * https://docs.flutter.dev/platform-integration/web/initialization
+  -->
+  <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
